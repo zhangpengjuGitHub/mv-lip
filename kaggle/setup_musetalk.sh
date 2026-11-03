@@ -42,7 +42,9 @@ uv pip install --python $PY \
 echo "=== 4/5 MMLab ==="
 # uv venv 默认不带 setuptools，而 mim 依赖 pkg_resources，不补会报
 # ModuleNotFoundError: No module named 'pkg_resources'
-uv pip install --python $PY "setuptools<81" wheel
+# Python 3.10 下 mmengine/yapf 会 fallback 到 toml；numpy 必须 <2，
+# 否则 mmcv/cv2 的 1.x ABI wheel 会报 numpy.core.multiarray failed to import
+uv pip install --python $PY "setuptools<81" wheel "numpy==1.26.4" toml "yapf==0.40.2"
 # chumpy(mmpose 老依赖) 的 PEP 517 隔离构建会因缺 numpy 失败，
 # 必须 --no-build-isolation 用当前环境先装好，mim install 才会跳过它
 uv pip install --python $PY chumpy --no-build-isolation
@@ -54,17 +56,9 @@ $MIM install "mmdet==3.1.0"
 $MIM install "mmpose>=1.1.0"
 
 echo "=== 5/5 权重 ==="
-cd /kaggle/working/musetalk
-if [ -f download_weights.sh ]; then
-  sh download_weights.sh || {
-    echo "download_weights.sh 失败，改用 huggingface-cli"
-    /kaggle/working/mtenv/bin/pip install -q -U "huggingface_hub[cli]"
-    /kaggle/working/mtenv/bin/huggingface-cli download TMElyralab/MuseTalk --local-dir models/
-  }
-else
-  /kaggle/working/mtenv/bin/pip install -q -U "huggingface_hub[cli]"
-  /kaggle/working/mtenv/bin/huggingface-cli download TMElyralab/MuseTalk --local-dir models/
-fi
+# 官方 download_weights.sh 用 hf-mirror.com + gdown(Google Drive)，
+# Kaggle 海外网络实测只下到 2 个文件，改走官方 HF 逐文件下载
+$PY /kaggle/working/mv-lip/kaggle/dl_weights.py
 find models -maxdepth 2 -type f | head -20
 
 echo "=== verify ==="
