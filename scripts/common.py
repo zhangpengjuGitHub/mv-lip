@@ -20,9 +20,12 @@ def ffmpeg():
     p = shutil.which("ffmpeg")
     if p:
         return p
-    p = os.path.join(os.path.dirname(ROOT), "music-mv", "tools", "ffmpeg.exe")
-    if os.path.exists(p):
-        return p
+    # 项目根 tools/ 里有自包含的 ffmpeg 7.1（gyan.dev essentials）
+    parent = os.path.dirname(ROOT)
+    for rel in ("tools", os.path.join("music-mv", "tools")):
+        cand = os.path.join(parent, rel, "ffmpeg.exe")
+        if os.path.exists(cand):
+            return cand
     raise RuntimeError(
         "找不到 ffmpeg。设置环境变量 FFMPEG 指向 ffmpeg.exe，"
         "或把 ffmpeg 放进 PATH。")
