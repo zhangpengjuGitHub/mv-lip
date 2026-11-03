@@ -1,7 +1,7 @@
 @echo off
 setlocal
 set "MV_PY=C:\Python311\python.exe"
-set "FFMPEG=%~dp0..\music-mv\tools\ffmpeg.exe"
+set "FFMPEG=%~dp0..\tools\ffmpeg.exe"
 if not exist "%FFMPEG%" set "FFMPEG=ffmpeg"
 echo.
 echo  ===== mv-lip pipeline =====
