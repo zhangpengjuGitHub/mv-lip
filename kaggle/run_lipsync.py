@@ -61,7 +61,11 @@ def main():
            "--version", a.version,
            "--bbox_shift", str(a.bbox_shift)]
     print("+", " ".join(cmd), flush=True)
-    subprocess.run(cmd, cwd=MT, check=True)
+    # Kaggle/Jupyter 会注入 MPLBACKEND=module://matplotlib_inline.backend_inline，
+    # MuseTalk 依赖的老版 matplotlib 不认这个值，会抛 ValueError: Key backend
+    env = dict(os.environ)
+    env["MPLBACKEND"] = "Agg"
+    subprocess.run(cmd, cwd=MT, check=True, env=env)
 
     # 找出结果 mp4（脚本一般落在 resdir 下）
     found = []
