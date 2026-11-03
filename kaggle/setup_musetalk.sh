@@ -36,6 +36,9 @@ uv pip install --python $PY \
   "imageio[ffmpeg]" "omegaconf" "ffmpeg-python" "moviepy" "gdown" "requests"
 
 echo "=== 4/5 MMLab ==="
+# uv venv 默认不带 setuptools，而 mim 依赖 pkg_resources，不补会报
+# ModuleNotFoundError: No module named 'pkg_resources'
+uv pip install --python $PY "setuptools<81" wheel
 uv pip install --python $PY -U openmim
 MIM=/kaggle/working/mtenv/bin/mim
 $MIM install mmengine
