@@ -18,7 +18,11 @@ df -h /kaggle/working | tail -1
 echo "=== 1/5 建 Python 3.10 venv ==="
 # Kaggle 默认 Python 3.13 / torch 2.11 / CUDA 12.8；MuseTalk 官方要求 3.10 + torch 2.0.1 + cu118。
 # MMLab(mmcv/mmdet/mmpose) 在 3.13 上没有 wheel，必须用独立 3.10 环境。
-uv venv --python 3.10 /kaggle/working/mtenv
+if [ ! -x /kaggle/working/mtenv/bin/python ]; then
+  uv venv --python 3.10 /kaggle/working/mtenv
+else
+  echo "mtenv already exists, skip"
+fi
 PY=/kaggle/working/mtenv/bin/python
 $PY -V
 
