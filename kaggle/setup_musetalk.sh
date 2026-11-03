@@ -1,49 +1,63 @@
 #!/usr/bin/env bash
-# Kaggle 上部署 MuseTalk 1.5（独立目录，不碰 ComfyUI）
-# 用法： bash kaggle/setup_musetalk.sh
+# Kaggle 上部署 MuseTalk 1.5（uv 独立 Python 3.10 环境，不碰系统 Python 3.13 / ComfyUI）
+# 用法： bash kaggle/setup_musetalk.sh > /kaggle/working/mt_setup.log 2>&1
 # 幂等：末尾打印 SETUP_MUSETALK_DONE 表示成功
 set -e
 cd /kaggle/working
 
-echo "=== 磁盘检查 ==="
-df -h /kaggle/working | tail -1
-
-# ⚠️ 关键：Kaggle working 只有 19.5G，InfiniteTalk 模型占 16.9G。
-# 成片下载到本机之后，才可以用下面这行释放空间（默认注释，需手动打开）。
-# rm -rf /kaggle/working/ComfyUI/models /kaggle/working/ComfyUI/custom_nodes/ComfyUI-WanVideoWrapper
-
 if [ -f /kaggle/working/musetalk/SETUP_MUSETALK_DONE ]; then
-  echo "already installed"
-  exit 0
+  echo "already installed"; exit 0
 fi
 
-echo "=== 1/4 clone ==="
+echo "=== 0/5 环境 ==="
+python3 -V
+uv --version
+df -h /kaggle/working | tail -1
 [ -d musetalk ] || git clone -q https://github.com/TMElyralab/MuseTalk.git musetalk
+
+echo "=== 1/5 建 Python 3.10 venv ==="
+# Kaggle 默认 Python 3.13 / torch 2.11 / CUDA 12.8；MuseTalk 官方要求 3.10 + torch 2.0.1 + cu118。
+# MMLab(mmcv/mmdet/mmpose) 在 3.13 上没有 wheel，必须用独立 3.10 环境。
+uv venv --python 3.10 /kaggle/working/mtenv
+PY=/kaggle/working/mtenv/bin/python
+$PY -V
+
+echo "=== 2/5 torch cu118 ==="
+uv pip install --python $PY \
+  "torch==2.0.1+cu118" "torchvision==0.15.2+cu118" "torchaudio==2.0.2+cu118" \
+  --index-url https://download.pytorch.org/whl/cu118
+$PY -c "import torch;print('torch',torch.__version__,'cuda',torch.version.cuda,torch.cuda.is_available())"
+
+echo "=== 3/5 精简依赖（去掉推理不需要的 tensorflow / tensorboard / gradio）==="
+uv pip install --python $PY \
+  "numpy<2" "opencv-python==4.9.0.80" "soundfile==0.12.1" \
+  "transformers==4.39.2" "diffusers==0.30.2" "accelerate==0.28.0" \
+  "huggingface_hub==0.30.2" "librosa==0.11.0" "einops==0.8.1" \
+  "imageio[ffmpeg]" "omegaconf" "ffmpeg-python" "moviepy" "gdown" "requests"
+
+echo "=== 4/5 MMLab ==="
+uv pip install --python $PY -U openmim
+MIM=/kaggle/working/mtenv/bin/mim
+$MIM install mmengine
+$MIM install "mmcv==2.0.1"
+$MIM install "mmdet==3.1.0"
+$MIM install "mmpose>=1.1.0"
+
+echo "=== 5/5 权重 ==="
 cd /kaggle/working/musetalk
-
-echo "=== 2/4 python deps ==="
-pip install -q -r requirements.txt
-pip install -q -U openmim
-mim install -q mmengine
-mim install -q "mmcv>=2.0.1"
-mim install -q "mmdet>=3.1.0"
-mim install -q "mmpose>=1.1.0"
-
-echo "=== 3/4 ffmpeg ==="
-python3 -c "import imageio_ffmpeg,os;print(imageio_ffmpeg.get_ffmpeg_exe())" > /kaggle/working/ffmpeg_path.txt 2>/dev/null || true
-export FFMPEG_PATH=$(cat /kaggle/working/ffmpeg_path.txt 2>/dev/null || echo ffmpeg)
-echo "FFMPEG_PATH=$FFMPEG_PATH"
-
-echo "=== 4/4 weights ==="
 if [ -f download_weights.sh ]; then
-  sh download_weights.sh || echo "download_weights.sh failed, see README for manual download"
+  sh download_weights.sh || {
+    echo "download_weights.sh 失败，改用 huggingface-cli"
+    /kaggle/working/mtenv/bin/pip install -q -U "huggingface_hub[cli]"
+    /kaggle/working/mtenv/bin/huggingface-cli download TMElyralab/MuseTalk --local-dir models/
+  }
 else
-  pip install -q -U "huggingface_hub[cli]"
-  huggingface-cli download TMElyralab/MuseTalk --local-dir models/
+  /kaggle/working/mtenv/bin/pip install -q -U "huggingface_hub[cli]"
+  /kaggle/working/mtenv/bin/huggingface-cli download TMElyralab/MuseTalk --local-dir models/
 fi
 find models -maxdepth 2 -type f | head -20
 
 echo "=== verify ==="
-python3 -c "import torch,cv2;print('torch',torch.__version__,'cuda',torch.cuda.is_available(),'cv2',cv2.__version__)"
+$PY -c "import torch,cv2,diffusers,transformers,mmcv,mmpose;print('OK torch',torch.__version__,'mmcv',mmcv.__version__)"
 touch /kaggle/working/musetalk/SETUP_MUSETALK_DONE
 echo SETUP_MUSETALK_DONE
