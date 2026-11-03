@@ -43,6 +43,9 @@ echo "=== 4/5 MMLab ==="
 # uv venv 默认不带 setuptools，而 mim 依赖 pkg_resources，不补会报
 # ModuleNotFoundError: No module named 'pkg_resources'
 uv pip install --python $PY "setuptools<81" wheel
+# chumpy(mmpose 老依赖) 的 PEP 517 隔离构建会因缺 numpy 失败，
+# 必须 --no-build-isolation 用当前环境先装好，mim install 才会跳过它
+uv pip install --python $PY chumpy --no-build-isolation
 uv pip install --python $PY -U openmim
 MIM=/kaggle/working/mtenv/bin/mim
 $MIM install mmengine
