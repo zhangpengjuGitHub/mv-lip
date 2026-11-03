@@ -1,0 +1,23 @@
+# 忽略素材和产物（体积大 / 用户私有）
+input/*
+!input/.gitkeep
+output/*
+!output/.gitkeep
+models/
+*.mp4
+*.mov
+*.wav
+*.mp3
+*.flac
+*.jpg
+*.png
+*.pt
+*.pth
+*.bin
+*.safetensors
+*.ckpt
+__pycache__/
+*.pyc
+.venv/
+venv/
+.DS_Store
