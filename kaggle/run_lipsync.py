@@ -16,6 +16,7 @@ import subprocess
 
 MT = "/kaggle/working/musetalk"
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PY = os.environ.get("MV_PY", "/kaggle/working/mtenv/bin/python")
 
 
 def main():
@@ -52,7 +53,7 @@ def main():
         if not os.path.exists(p):
             raise SystemExit("缺权重: %s\n先跑 bash kaggle/setup_musetalk.sh" % p)
 
-    cmd = ["python3", "-m", "scripts.inference",
+    cmd = [PY, "-m", "scripts.inference",
            "--inference_config", cfg,
            "--result_dir", resdir,
            "--unet_model_path", model,
