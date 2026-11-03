@@ -1,0 +1,5 @@
+# MuseTalk 推理配置模板（由 kaggle/run_lipsync.py 自动生成，这里仅作格式参考）
+# video_path 可以是：视频文件 / 单张图片 / 图片目录
+task_0:
+  video_path: "/kaggle/working/mv-lip/output/cut_25fps.mp4"
+  audio_path: "/kaggle/working/mv-lip/output/vocal_dry.wav"
