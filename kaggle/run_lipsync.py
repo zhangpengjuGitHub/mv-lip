@@ -33,6 +33,19 @@ def main():
         if not os.path.exists(p):
             raise SystemExit("找不到输入: " + p)
 
+    # Kaggle /kaggle/working 的 Output 配额只有 19.5GiB，MuseTalk 全片推理会把
+    # 逐帧 PNG 写进去（实测 194s/25fps = 4853 帧约 5GiB），直接把配额撑满后
+    # kernel 崩、推理进程被杀、GPU 归零。/kaggle/temp 是独立大盘（实测剩 962G），
+    # 把 results 软链过去，帧序列不再计入 Output 配额。
+    temp_root = "/kaggle/temp/mt_results"
+    res_link = os.path.join(MT, "results")
+    if os.path.isdir("/kaggle/temp") and not os.path.islink(res_link):
+        os.makedirs(temp_root, exist_ok=True)
+        if os.path.isdir(res_link):
+            shutil.rmtree(res_link, ignore_errors=True)
+        os.symlink(temp_root, res_link)
+        print("results ->", temp_root, flush=True)
+
     cfg = os.path.join(MT, "configs", "inference", "mv_lip.yaml")
     os.makedirs(os.path.dirname(cfg), exist_ok=True)
     with open(cfg, "w", encoding="utf-8") as f:
