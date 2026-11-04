@@ -56,6 +56,10 @@ $MIM install mmengine
 $MIM install "mmcv==2.0.1"
 $MIM install "mmdet==3.1.0"
 $MIM install "mmpose>=1.1.0"
+# mim install mmpose 会把 numpy 悄悄升到 2.2.6，而 opencv 4.9 / mmcv 2.0.1
+# 都是 numpy 1.x ABI 编译的，导入即报 numpy.core.multiarray failed to import。
+# 所有 mim 装完之后必须再钉一次，顺序不能提前。
+uv pip install --python $PY "numpy==1.26.4" --reinstall
 
 echo "=== 5/5 权重 ==="
 # 官方 download_weights.sh 用 hf-mirror.com + gdown(Google Drive)，
