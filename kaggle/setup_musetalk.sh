@@ -47,6 +47,8 @@ echo "=== 4/5 MMLab ==="
 uv pip install --python $PY "setuptools<81" wheel "numpy==1.26.4" toml "yapf==0.40.2"
 # chumpy(mmpose 老依赖) 的 PEP 517 隔离构建会因缺 numpy 失败，
 # 必须 --no-build-isolation 用当前环境先装好，mim install 才会跳过它
+# uv venv 默认不带 pip，而 chumpy 的 setup.py 里 import pip —— 必须先补 pip
+uv pip install --python $PY pip
 uv pip install --python $PY chumpy --no-build-isolation
 uv pip install --python $PY -U openmim
 MIM=/kaggle/working/mtenv/bin/mim
