@@ -50,19 +50,21 @@ def main():
         except Exception as e:
             print("FAIL", repo, fn, repr(e)[:160], flush=True)
 
-    # face-parse-bisent：官方在 Google Drive，Kaggle 上 gdown 可能不通，
-    # 失败时打印手工下载地址，不阻断其他权重
+    # face-parse-bisent：官方只在 Google Drive，Kaggle 上 gdown 实测不通
+    # （会静默缺 79999_iter.pth，推理时报 FileNotFoundError）。
+    # 改走 HF 镜像 ManyOtherFunctions/face-parse-bisent，逐文件可重跑。
     fp = os.path.join(M, "face-parse-bisent")
     os.makedirs(fp, exist_ok=True)
     a = os.path.join(fp, "79999_iter.pth")
     b = os.path.join(fp, "resnet18-5c106cde.pth")
-    if not os.path.exists(a):
+    if not os.path.exists(a) or os.path.getsize(a) < 1024:
         try:
-            subprocess.run([sys.executable, "-m", "gdown", "--id",
-                            "154JgKpzCPW82qINcVieuPH3fZ2e0P812", "-O", a],
-                           check=True, timeout=300)
-        except Exception:
-            print("FAIL face-parse 79999_iter.pth (gdown)；需手工放:", a, flush=True)
+            hf_hub_download(repo_id="ManyOtherFunctions/face-parse-bisent",
+                            filename="79999_iter.pth", local_dir=fp,
+                            local_dir_use_symlinks=False)
+            print("OK  ", a, flush=True)
+        except Exception as e:
+            print("FAIL face-parse 79999_iter.pth", repr(e)[:160], flush=True)
     if not os.path.exists(b):
         url = "https://download.pytorch.org/models/resnet18-5c106cde.pth"
         try:
