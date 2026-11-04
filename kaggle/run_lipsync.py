@@ -80,6 +80,25 @@ def main():
     shutil.copy2(found[0], a.out)
     print("产出:", a.out, os.path.getsize(a.out), "bytes")
 
+    # MuseTalk 在 bbox 越界时会跳过写帧，%08d.png 断档会让 ffmpeg 提前停止，
+    # 结果推理 exit=0 但 mp4 只剩开头几帧（实测 250 帧 -> 8 帧）。必须校验。
+    def frame_count(p):
+        r = subprocess.run(
+            ["ffprobe", "-v", "error", "-select_streams", "v:0",
+             "-count_frames", "-show_entries", "stream=nb_read_frames",
+             "-of", "csv=p=0", p], capture_output=True, text=True)
+        try:
+            return int(r.stdout.strip().split(",")[0])
+        except Exception:
+            return -1
+
+    n_in, n_out = frame_count(a.video), frame_count(a.out)
+    print("帧数校验:", n_in, "->", n_out)
+    if n_in > 0 and n_out > 0 and n_out < n_in * 0.95:
+        raise SystemExit(
+            "输出帧数不足 %d/%d：检查 bbox 越界，先跑 kaggle/patch_musetalk.py"
+            % (n_out, n_in))
+
 
 if __name__ == "__main__":
     main()
