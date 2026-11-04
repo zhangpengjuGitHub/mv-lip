@@ -67,6 +67,9 @@ echo "=== 5/5 权重 ==="
 $PY /kaggle/working/mv-lip/kaggle/dl_weights.py
 find models -maxdepth 2 -type f | head -20
 
+echo "=== patch: 保持输出帧序列连续（坏 bbox 不再截断成片）==="
+python /kaggle/working/mv-lip/kaggle/patch_musetalk.py
+
 echo "=== verify ==="
 $PY -c "import torch,cv2,diffusers,transformers,mmcv,mmpose;print('OK torch',torch.__version__,'mmcv',mmcv.__version__)"
 touch /kaggle/working/musetalk/SETUP_MUSETALK_DONE
